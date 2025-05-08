@@ -11,17 +11,30 @@
   <style>
     body { 
       padding: 20px; 
-      background-color: #f8f9fa;
+      background-image: url('asset/sa.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     .form-section { 
       margin-bottom: 30px; 
       padding: 20px; 
-      background-color: white; 
+      background-color: rgba(255, 255, 255, 0.9); 
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     #adminSection { display: none; }
+    
+    /* Logo Styles */
+    .logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo {
+      max-width: 150px;
+      height: auto;
+    }
     
     /* Results Matrix Styles */
     .results-matrix {
@@ -58,7 +71,7 @@
     /* Category Section */
     .category-section {
       margin-bottom: 30px;
-      background-color: white;
+      background-color: rgba(255, 255, 255, 0.9);
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -76,35 +89,82 @@
       text-align: center;
     }
     
+    /* Admin and Export Buttons */
+    .admin-button-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .btn-admin, .btn-export {
+      background-color: #2c3e50;
+      color: white;
+      border: none;
+    }
+    .btn-admin:hover, .btn-export:hover {
+      background-color: #34495e;
+    }
+    
     /* Responsive Table */
     @media (max-width: 768px) {
       .results-matrix {
         display: block;
         overflow-x: auto;
       }
+      .logo {
+        max-width: 100px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="logo-container">
+      <img src="asset/SHAREE'A (1).png" alt="Competition Logo" class="logo">
+    </div>
     <h1 class="text-center mb-4" style="color: #2c3e50;">College Competition Points System</h1>
 
-    <!-- Admin Access Section -->
-    <section class="form-section" id="pinSection">
-      <h2>Admin Access</h2>
+    <!-- User View Section -->
+    <section class="form-section">
+      <h2>View Results</h2>
       <div class="row g-3">
-        <div class="col-md-6">
-          <label for="adminPin" class="form-label">Enter 4-digit PIN to Upload Results:</label>
-          <input type="password" class="form-control" id="adminPin" maxlength="4" placeholder="1234">
-          <div class="invalid-feedback" id="pinError"></div>
+        <div class="col-md-4">
+          <label for="fStream" class="form-label">Stream:</label>
+          <select class="form-select" id="fStream">
+            <option value="">All Streams</option>
+            <option value="Shareea">Shareea</option>
+            <option value="Shareea Plus">Shareea Plus</option>
+            <option value="Life">Life</option>
+            <option value="SHE">SHE</option>
+            <option value="SHE Plus">SHE Plus</option>
+          </select>
         </div>
-        <div class="col-md-12 mt-3">
-          <button class="btn btn-primary" onclick="checkPin()">Enter Admin Mode</button>
+        <div class="col-md-4" id="fCategoryField" style="display:none;">
+          <label for="fCategory" class="form-label">Category:</label>
+          <select class="form-select" id="fCategory">
+            <option value="">All Categories</option>
+            <option value="Sanaviyya">Sanaviyya</option>
+            <option value="Bakalooriyya">Bakalooriyya</option>
+            <option value="PG">PG</option>
+          </select>
         </div>
+        <div class="col-12">
+          <button type="button" class="btn btn-primary" onclick="filterResults()">View Results</button>
+          <button type="button" class="btn btn-secondary ms-2" onclick="resetFilters()">Reset Filters</button>
+          <button type="button" class="btn btn-export ms-2" onclick="exportToPDF()">Export to PDF</button>
+        </div>
+      </div>
+
+      <div id="resultsContainer">
+        <!-- Category tables will be inserted here -->
+      </div>
+      <div class="alert alert-warning mt-3" id="noResultsAlert" style="display:none;">
+        No results found matching your criteria.
       </div>
     </section>
 
-    <!-- Admin Upload Section -->
+    <!-- Admin Upload Section (Hidden by Default) -->
     <section class="form-section" id="adminSection">
       <h2>Manage Competition</h2>
       <div class="row g-3">
@@ -116,10 +176,28 @@
           </div>
         </div>
         <div class="col-md-4">
+          <label for="removeItem" class="form-label">Remove Competition Item:</label>
+          <div class="input-group">
+            <select class="form-select" id="removeItem">
+              <option value="">Select item to remove</option>
+            </select>
+            <button class="btn btn-danger" type="button" onclick="removeCompetitionItem()">Remove</button>
+          </div>
+        </div>
+        <div class="col-md-4">
           <label for="college" class="form-label">Add New College:</label>
           <div class="input-group">
             <input type="text" class="form-control" id="college" placeholder="Enter college name">
             <button class="btn btn-success" type="button" onclick="addCollege()">Add</button>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label for="removeCollege" class="form-label">Remove College:</label>
+          <div class="input-group">
+            <select class="form-select" id="removeCollege">
+              <option value="">Select college to remove</option>
+            </select>
+            <button class="btn btn-danger" type="button" onclick="removeCollege()">Remove</button>
           </div>
         </div>
         <div class="col-md-4">
@@ -130,6 +208,7 @@
             <option value="Shareea Plus">Shareea Plus</option>
             <option value="Life">Life</option>
             <option value="SHE">SHE</option>
+            <option value="SHE Plus">SHE Plus</option>
           </select>
         </div>
         <div class="col-md-4" id="categoryField" style="display:none;">
@@ -164,34 +243,33 @@
         <button type="button" class="btn btn-primary" onclick="savePoints()">Save All Points</button>
       </div>
     </section>
+  </div>
 
-    <!-- User View Section -->
-    <section class="form-section">
-      <h2>View Results</h2>
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label for="fStream" class="form-label">Stream:</label>
-          <select class="form-select" id="fStream">
-            <option value="">All Streams</option>
-            <option value="Shareea">Shareea</option>
-            <option value="Shareea Plus">Shareea Plus</option>
-            <option value="Life">Life</option>
-            <option value="SHE">SHE</option>
-          </select>
-        </div>
-        <div class="col-12">
-          <button type="button" class="btn btn-primary" onclick="filterResults()">View Results</button>
-          <button type="button" class="btn btn-secondary ms-2" onclick="resetFilters()">Reset Filters</button>
-        </div>
-      </div>
+  <!-- Admin and Export Buttons -->
+  <div class="admin-button-container">
+    <button class="btn btn-export" onclick="exportToPDF()">Individual</button>
+    <button class="btn btn-admin" onclick="showPinModal()">Admin Access</button>
+  </div>
 
-      <div id="resultsContainer">
-        <!-- Category tables will be inserted here -->
+  <!-- Password Entry Modal -->
+  <div class="modal fade" id="pinModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Admin Access</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label for="adminPassword" class="form-label">Enter Password (up to 8 characters, letters and numbers):</label>
+          <input type="password" class="form-control" id="adminPassword" maxlength="8" placeholder="Password">
+          <div class="invalid-feedback" id="passwordError"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="checkPassword()">Submit</button>
+        </div>
       </div>
-      <div class="alert alert-warning mt-3" id="noResultsAlert" style="display:none;">
-        No results found matching your criteria.
-      </div>
-    </section>
+    </div>
   </div>
 
   <!-- Clear Data Confirmation Modal -->
@@ -216,8 +294,14 @@
   <!-- Bootstrap & jQuery JS -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- jsPDF and html2canvas for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
   <script>
+    // Initialize jsPDF
+    const { jsPDF } = window.jspdf;
+
     // Initialize data from localStorage or create empty structure
     let competitionData = JSON.parse(localStorage.getItem('competitionData')) || {
       items: [],
@@ -226,8 +310,9 @@
       stream: "",
       category: ""
     };
-    const correctPin = "8899";
+    const correctPassword = "sn@sso25";
     const clearModal = new bootstrap.Modal(document.getElementById('clearModal'));
+    const pinModal = new bootstrap.Modal(document.getElementById('pinModal'));
     const categories = ["Sanaviyya", "Bakalooriyya", "PG"];
 
     $(document).ready(function() {
@@ -242,28 +327,93 @@
         }
       });
 
+      $('#fStream').change(function() {
+        const stream = $(this).val();
+        if (stream === "Shareea" || stream === "SHE") {
+          $('#fCategoryField').show();
+        } else {
+          $('#fCategoryField').hide();
+          $('#fCategory').val('');
+        }
+      });
+
       // Initialize the views
       updateAdminMatrix();
       updateResultsView();
+      updateRemoveDropdowns();
     });
 
-    function checkPin() {
-      const pin = $('#adminPin').val();
-      if (pin === correctPin) {
+    function exportToPDF() {
+      const resultsContainer = document.getElementById('resultsContainer');
+      if (!resultsContainer.children.length) {
+        showAlert('No results to export. Please apply filters to display results.', 'warning');
+        return;
+      }
+
+      // Ensure high-quality rendering with background
+      html2canvas(resultsContainer, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false
+      }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        const imgWidth = 190; // A4 width minus 10mm margins on each side
+        const pageHeight = 277; // A4 height minus 10mm top/bottom margins
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 10;
+
+        // Add first page
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        // Add additional pages if content exceeds one page
+        while (heightLeft > 0) {
+          pdf.addPage();
+          position = heightLeft - imgHeight + 10;
+          pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        // Save the PDF to the device
+        pdf.save('competition_results.pdf');
+        showAlert('All tables exported to PDF and saved successfully!', 'success');
+      }).catch(error => {
+        console.error('Error generating PDF:', error);
+        showAlert('Failed to export PDF. Please try again.', 'danger');
+      });
+    }
+
+    function showPinModal() {
+      $('#adminPassword').val('');
+      $('#passwordError').text('');
+      $('#adminPassword').removeClass('is-invalid');
+      pinModal.show();
+    }
+
+    function checkPassword() {
+      const password = $('#adminPassword').val();
+      if (password === correctPassword) {
         $('#adminSection').show();
-        $('#pinSection').hide();
-        $('#pinError').text('');
-        $('#adminPin').removeClass('is-invalid');
+        pinModal.hide();
+        $('#passwordError').text('');
+        $('#adminPassword').removeClass('is-invalid');
       } else {
-        $('#pinError').text('Incorrect PIN. Please try again.');
-        $('#adminPin').addClass('is-invalid');
+        $('#passwordError').text('Incorrect password. Please try again.');
+        $('#adminPassword').addClass('is-invalid');
       }
     }
 
     function exitAdmin() {
       $('#adminSection').hide();
-      $('#pinSection').show();
-      $('#adminPin').val('');
+      $('#adminPassword').val('');
     }
 
     function addCompetitionItem() {
@@ -280,10 +430,29 @@
           $('#compItem').val('');
           updateAdminMatrix();
           updateResultsView();
+          updateRemoveDropdowns();
           showAlert('Competition item added successfully!', 'success');
         } else {
           showAlert('This item already exists!', 'warning');
         }
+      }
+    }
+
+    function removeCompetitionItem() {
+      const itemToRemove = $('#removeItem').val();
+      if (itemToRemove) {
+        competitionData.items = competitionData.items.filter(item => item !== itemToRemove);
+        // Remove associated points
+        Object.keys(competitionData.points).forEach(key => {
+          if (key.includes(itemToRemove)) {
+            delete competitionData.points[key];
+          }
+        });
+        saveData();
+        updateAdminMatrix();
+        updateResultsView();
+        updateRemoveDropdowns();
+        showAlert('Competition item removed successfully!', 'success');
       }
     }
 
@@ -295,10 +464,47 @@
         $('#college').val('');
         updateAdminMatrix();
         updateResultsView();
+        updateRemoveDropdowns();
         showAlert('College added successfully!', 'success');
       } else if (competitionData.colleges.includes(collegeName)) {
         showAlert('This college already exists!', 'warning');
       }
+    }
+
+    function removeCollege() {
+      const collegeToRemove = $('#removeCollege').val();
+      if (collegeToRemove) {
+        competitionData.colleges = competitionData.colleges.filter(college => college !== collegeToRemove);
+        // Remove associated points
+        Object.keys(competitionData.points).forEach(key => {
+          if (key.includes(collegeToRemove)) {
+            delete competitionData.points[key];
+          }
+        });
+        saveData();
+        updateAdminMatrix();
+        updateResultsView();
+        updateRemoveDropdowns();
+        showAlert('College removed successfully!', 'success');
+      }
+    }
+
+    function updateRemoveDropdowns() {
+      // Update remove item dropdown
+      const removeItemSelect = $('#removeItem');
+      removeItemSelect.empty();
+      removeItemSelect.append('<option value="">Select item to remove</option>');
+      competitionData.items.forEach(item => {
+        removeItemSelect.append(`<option value="${item}">${item}</option>`);
+      });
+
+      // Update remove college dropdown
+      const removeCollegeSelect = $('#removeCollege');
+      removeCollegeSelect.empty();
+      removeCollegeSelect.append('<option value="">Select college to remove</option>');
+      competitionData.colleges.forEach(college => {
+        removeCollegeSelect.append(`<option value="${college}">${college}</option>`);
+      });
     }
 
     function updateAdminMatrix() {
@@ -341,20 +547,28 @@
       
       // Get filter values
       const filterStream = $('#fStream').val();
+      const filterCategory = $('#fCategory').val();
       
       if (filterStream === "Shareea" || filterStream === "SHE") {
-        // Show separate tables for each category
-        categories.forEach(category => {
-          createCategoryTable(container, filterStream, category);
-        });
-      } else {
-        // Show single table for other streams
+        // Show category tables only for SHE or Shareea streams
+        if (filterCategory) {
+          createCategoryTable(container, filterStream, filterCategory);
+        } else {
+          categories.forEach(category => {
+            createCategoryTable(container, filterStream, category);
+          });
+        }
+      } else if (filterStream) {
+        // Show single table for other streams (Shareea Plus, SHE Plus, Life)
         createCategoryTable(container, filterStream, "");
       }
       
       // Show/hide no results alert
       const hasResults = competitionData.items.some(item => {
         if (!filterStream) return true;
+        if (filterCategory && (filterStream === "Shareea" || filterStream === "SHE")) {
+          return item.includes(`(${filterStream} - ${filterCategory})`);
+        }
         return item.includes(`(${filterStream}`);
       });
       
@@ -364,7 +578,7 @@
     function createCategoryTable(container, stream, category) {
       // Filter items based on stream and category
       const filteredItems = competitionData.items.filter(item => {
-        if (!stream) return false; // We're in a category view, so we need a stream
+        if (!stream) return false;
         
         const hasStream = item.includes(`(${stream}`);
         if (!hasStream) return false;
@@ -391,7 +605,6 @@
                 </tr>
               </thead>
               <tbody></tbody>
-              <tfoot></tfoot>
             </table>
           </div>
         </div>
@@ -400,11 +613,9 @@
       const table = section.find('table');
       const thead = table.find('thead tr');
       const tbody = table.find('tbody');
-      const tfoot = table.find('tfoot');
       
       // Add items to header
       filteredItems.forEach(item => {
-        // Remove stream and category from display name
         const displayName = item.replace(/\(.*?\)/g, '').trim();
         thead.append(`<th>${displayName}</th>`);
       });
@@ -426,25 +637,6 @@
         row.append(`<td class="fw-bold">${collegeTotal}</td>`);
         tbody.append(row);
       });
-      
-      // Add footer with totals
-      if (filteredItems.length > 0) {
-        const footerRow = $('<tr><td class="college-cell fw-bold">Totals</td></tr>');
-        let grandTotal = 0;
-        
-        filteredItems.forEach(item => {
-          let itemTotal = 0;
-          competitionData.colleges.forEach(college => {
-            const pointsKey = `${college}_${item}`;
-            itemTotal += parseInt(competitionData.points[pointsKey]) || 0;
-          });
-          grandTotal += itemTotal;
-          footerRow.append(`<td class="fw-bold">${itemTotal}</td>`);
-        });
-        
-        footerRow.append(`<td class="fw-bold">${grandTotal}</td>`);
-        tfoot.append(footerRow);
-      }
       
       container.append(section);
     }
@@ -475,6 +667,8 @@
 
     function resetFilters() {
       $('#fStream').val('');
+      $('#fCategory').val('');
+      $('#fCategoryField').hide();
       updateResultsView();
     }
 
@@ -493,6 +687,7 @@
       saveData();
       updateAdminMatrix();
       updateResultsView();
+      updateRemoveDropdowns();
       clearModal.hide();
       showAlert('All data has been cleared.', 'success');
     });
