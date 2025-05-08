@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Competition Results</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { 
+      padding: 20px; 
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .form-section { 
+      margin-bottom: 30px; 
+      padding: 20px; 
+      background-color: white; 
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    #adminSection { display: none; }
+    
+    /* Results Matrix Styles */
+    .results-matrix {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      margin-bottom: 40px;
+    }
+    .results-matrix th, .results-matrix td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    .results-matrix th {
+      background-color: #2c3e50;
+      color: white;
+      position: sticky;
+      top: 0;
+    }
+    .results-matrix tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .results-matrix tr:hover {
+      background-color: #f1f1f1;
+    }
+    .college-cell {
+      background-color: #e9ecef;
+      font-weight: bold;
+      text-align: left;
+      position: sticky;
+      left: 0;
+    }
+    
+    /* Category Section */
+    .category-section {
+      margin-bottom: 30px;
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .category-title {
+      color: #2c3e50;
+      border-bottom: 2px solid #f1f1f1;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    
+    /* Points Input */
+    .points-input {
+      width: 60px;
+      text-align: center;
+    }
+    
+    /* Responsive Table */
+    @media (max-width: 768px) {
+      .results-matrix {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="text-center mb-4" style="color: #2c3e50;">College Competition Points System</h1>
+
+    <!-- Admin Access Section -->
+    <section class="form-section" id="pinSection">
+      <h2>Admin Access</h2>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="adminPin" class="form-label">Enter 4-digit PIN to Upload Results:</label>
+          <input type="password" class="form-control" id="adminPin" maxlength="4" placeholder="1234">
+          <div class="invalid-feedback" id="pinError"></div>
+        </div>
+        <div class="col-md-12 mt-3">
+          <button class="btn btn-primary" onclick="checkPin()">Enter Admin Mode</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Admin Upload Section -->
+    <section class="form-section" id="adminSection">
+      <h2>Manage Competition</h2>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label for="compItem" class="form-label">Add New Competition Item:</label>
+          <div class="input-group">
+            <input type="text" class="form-control" id="compItem" placeholder="Enter item name">
+            <button class="btn btn-success" type="button" onclick="addCompetitionItem()">Add</button>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label for="college" class="form-label">Add New College:</label>
+          <div class="input-group">
+            <input type="text" class="form-control" id="college" placeholder="Enter college name">
+            <button class="btn btn-success" type="button" onclick="addCollege()">Add</button>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label for="stream" class="form-label">Stream:</label>
+          <select class="form-select" id="stream">
+            <option value="">All Streams</option>
+            <option value="Shareea">Shareea</option>
+            <option value="Shareea Plus">Shareea Plus</option>
+            <option value="Life">Life</option>
+            <option value="SHE">SHE</option>
+          </select>
+        </div>
+        <div class="col-md-4" id="categoryField" style="display:none;">
+          <label for="category" class="form-label">Category:</label>
+          <select class="form-select" id="category">
+            <option value="Sanaviyya">Sanaviyya</option>
+            <option value="Bakalooriyya">Bakalooriyya</option>
+            <option value="PG">PG</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <button type="button" class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+          <button type="button" class="btn btn-secondary ms-2" onclick="exitAdmin()">Exit Admin Mode</button>
+        </div>
+      </div>
+      
+      <h3 class="mt-4">Assign Points</h3>
+      <div class="table-responsive">
+        <table class="results-matrix" id="adminMatrix">
+          <thead>
+            <tr>
+              <th>College \ Item</th>
+              <!-- Competition items will be added here dynamically -->
+            </tr>
+          </thead>
+          <tbody id="adminMatrixBody">
+            <!-- Colleges and points will be added here dynamically -->
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-3">
+        <button type="button" class="btn btn-primary" onclick="savePoints()">Save All Points</button>
+      </div>
+    </section>
+
+    <!-- User View Section -->
+    <section class="form-section">
+      <h2>View Results</h2>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label for="fStream" class="form-label">Stream:</label>
+          <select class="form-select" id="fStream">
+            <option value="">All Streams</option>
+            <option value="Shareea">Shareea</option>
+            <option value="Shareea Plus">Shareea Plus</option>
+            <option value="Life">Life</option>
+            <option value="SHE">SHE</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <button type="button" class="btn btn-primary" onclick="filterResults()">View Results</button>
+          <button type="button" class="btn btn-secondary ms-2" onclick="resetFilters()">Reset Filters</button>
+        </div>
+      </div>
+
+      <div id="resultsContainer">
+        <!-- Category tables will be inserted here -->
+      </div>
+      <div class="alert alert-warning mt-3" id="noResultsAlert" style="display:none;">
+        No results found matching your criteria.
+      </div>
+    </section>
+  </div>
+
+  <!-- Clear Data Confirmation Modal -->
+  <div class="modal fade" id="clearModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Clear All Data</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to clear ALL data? This action cannot be undone and will delete all colleges, items, and points.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmClear">Clear All Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap & jQuery JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // Initialize data from localStorage or create empty structure
+    let competitionData = JSON.parse(localStorage.getItem('competitionData')) || {
+      items: [],
+      colleges: [],
+      points: {},
+      stream: "",
+      category: ""
+    };
+    const correctPin = "8899";
+    const clearModal = new bootstrap.Modal(document.getElementById('clearModal'));
+    const categories = ["Sanaviyya", "Bakalooriyya", "PG"];
+
+    $(document).ready(function() {
+      // Set up event listeners for stream changes
+      $('#stream').change(function() {
+        const stream = $(this).val();
+        if (stream === "Shareea" || stream === "SHE") {
+          $('#categoryField').show();
+        } else {
+          $('#categoryField').hide();
+          $('#category').val('Sanaviyya');
+        }
+      });
+
+      // Initialize the views
+      updateAdminMatrix();
+      updateResultsView();
+    });
+
+    function checkPin() {
+      const pin = $('#adminPin').val();
+      if (pin === correctPin) {
+        $('#adminSection').show();
+        $('#pinSection').hide();
+        $('#pinError').text('');
+        $('#adminPin').removeClass('is-invalid');
+      } else {
+        $('#pinError').text('Incorrect PIN. Please try again.');
+        $('#adminPin').addClass('is-invalid');
+      }
+    }
+
+    function exitAdmin() {
+      $('#adminSection').hide();
+      $('#pinSection').show();
+      $('#adminPin').val('');
+    }
+
+    function addCompetitionItem() {
+      const itemName = $('#compItem').val().trim();
+      const stream = $('#stream').val();
+      const category = $('#category').val();
+      
+      if (itemName) {
+        const itemKey = stream ? `${itemName} (${stream}${(stream === "Shareea" || stream === "SHE") ? ' - ' + category : ''})` : itemName;
+        
+        if (!competitionData.items.includes(itemKey)) {
+          competitionData.items.push(itemKey);
+          saveData();
+          $('#compItem').val('');
+          updateAdminMatrix();
+          updateResultsView();
+          showAlert('Competition item added successfully!', 'success');
+        } else {
+          showAlert('This item already exists!', 'warning');
+        }
+      }
+    }
+
+    function addCollege() {
+      const collegeName = $('#college').val().trim();
+      if (collegeName && !competitionData.colleges.includes(collegeName)) {
+        competitionData.colleges.push(collegeName);
+        saveData();
+        $('#college').val('');
+        updateAdminMatrix();
+        updateResultsView();
+        showAlert('College added successfully!', 'success');
+      } else if (competitionData.colleges.includes(collegeName)) {
+        showAlert('This college already exists!', 'warning');
+      }
+    }
+
+    function updateAdminMatrix() {
+      const thead = $('#adminMatrix thead tr');
+      const tbody = $('#adminMatrixBody');
+      
+      // Update header
+      thead.empty();
+      thead.append('<th>College \\ Item</th>');
+      competitionData.items.forEach(item => {
+        thead.append(`<th>${item}</th>`);
+      });
+      
+      // Update body
+      tbody.empty();
+      competitionData.colleges.forEach(college => {
+        const row = $('<tr></tr>');
+        row.append(`<td class="college-cell">${college}</td>`);
+        
+        competitionData.items.forEach(item => {
+          const pointsKey = `${college}_${item}`;
+          const pointsValue = competitionData.points[pointsKey] || '';
+          row.append(`
+            <td>
+              <input type="number" class="form-control points-input" 
+                     data-college="${college}" 
+                     data-item="${item}"
+                     value="${pointsValue}">
+            </td>
+          `);
+        });
+        
+        tbody.append(row);
+      });
+    }
+
+    function updateResultsView() {
+      const container = $('#resultsContainer');
+      container.empty();
+      
+      // Get filter values
+      const filterStream = $('#fStream').val();
+      
+      if (filterStream === "Shareea" || filterStream === "SHE") {
+        // Show separate tables for each category
+        categories.forEach(category => {
+          createCategoryTable(container, filterStream, category);
+        });
+      } else {
+        // Show single table for other streams
+        createCategoryTable(container, filterStream, "");
+      }
+      
+      // Show/hide no results alert
+      const hasResults = competitionData.items.some(item => {
+        if (!filterStream) return true;
+        return item.includes(`(${filterStream}`);
+      });
+      
+      $('#noResultsAlert').toggle(!hasResults);
+    }
+
+    function createCategoryTable(container, stream, category) {
+      // Filter items based on stream and category
+      const filteredItems = competitionData.items.filter(item => {
+        if (!stream) return false; // We're in a category view, so we need a stream
+        
+        const hasStream = item.includes(`(${stream}`);
+        if (!hasStream) return false;
+        
+        if (stream === "Shareea" || stream === "SHE") {
+          if (category && !item.includes(category)) return false;
+        }
+        return true;
+      });
+      
+      if (filteredItems.length === 0) return;
+      
+      // Create category section
+      const section = $(`
+        <div class="category-section">
+          <h3 class="category-title">
+            ${stream}${category ? ` - ${category}` : ''}
+          </h3>
+          <div class="table-responsive">
+            <table class="results-matrix">
+              <thead>
+                <tr>
+                  <th>College</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot></tfoot>
+            </table>
+          </div>
+        </div>
+      `);
+      
+      const table = section.find('table');
+      const thead = table.find('thead tr');
+      const tbody = table.find('tbody');
+      const tfoot = table.find('tfoot');
+      
+      // Add items to header
+      filteredItems.forEach(item => {
+        // Remove stream and category from display name
+        const displayName = item.replace(/\(.*?\)/g, '').trim();
+        thead.append(`<th>${displayName}</th>`);
+      });
+      thead.append('<th>Total</th>');
+      
+      // Add colleges and points
+      competitionData.colleges.forEach(college => {
+        const row = $('<tr></tr>');
+        row.append(`<td class="college-cell">${college}</td>`);
+        
+        let collegeTotal = 0;
+        filteredItems.forEach(item => {
+          const pointsKey = `${college}_${item}`;
+          const pointsValue = competitionData.points[pointsKey] || 0;
+          collegeTotal += parseInt(pointsValue) || 0;
+          row.append(`<td>${pointsValue || '-'}</td>`);
+        });
+        
+        row.append(`<td class="fw-bold">${collegeTotal}</td>`);
+        tbody.append(row);
+      });
+      
+      // Add footer with totals
+      if (filteredItems.length > 0) {
+        const footerRow = $('<tr><td class="college-cell fw-bold">Totals</td></tr>');
+        let grandTotal = 0;
+        
+        filteredItems.forEach(item => {
+          let itemTotal = 0;
+          competitionData.colleges.forEach(college => {
+            const pointsKey = `${college}_${item}`;
+            itemTotal += parseInt(competitionData.points[pointsKey]) || 0;
+          });
+          grandTotal += itemTotal;
+          footerRow.append(`<td class="fw-bold">${itemTotal}</td>`);
+        });
+        
+        footerRow.append(`<td class="fw-bold">${grandTotal}</td>`);
+        tfoot.append(footerRow);
+      }
+      
+      container.append(section);
+    }
+
+    function savePoints() {
+      // Collect all points from the admin matrix
+      $('.points-input').each(function() {
+        const college = $(this).data('college');
+        const item = $(this).data('item');
+        const points = $(this).val();
+        const pointsKey = `${college}_${item}`;
+        
+        if (points) {
+          competitionData.points[pointsKey] = parseInt(points);
+        } else {
+          delete competitionData.points[pointsKey];
+        }
+      });
+      
+      saveData();
+      updateResultsView();
+      showAlert('Points saved successfully!', 'success');
+    }
+
+    function filterResults() {
+      updateResultsView();
+    }
+
+    function resetFilters() {
+      $('#fStream').val('');
+      updateResultsView();
+    }
+
+    function clearAllData() {
+      clearModal.show();
+    }
+
+    $('#confirmClear').click(function() {
+      competitionData = {
+        items: [],
+        colleges: [],
+        points: {},
+        stream: "",
+        category: ""
+      };
+      saveData();
+      updateAdminMatrix();
+      updateResultsView();
+      clearModal.hide();
+      showAlert('All data has been cleared.', 'success');
+    });
+
+    function saveData() {
+      localStorage.setItem('competitionData', JSON.stringify(competitionData));
+    }
+
+    function showAlert(message, type) {
+      const alert = $(`<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>`);
+      
+      $('.container').prepend(alert);
+      
+      setTimeout(() => {
+        alert.alert('close');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
