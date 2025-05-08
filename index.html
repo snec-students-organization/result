@@ -377,7 +377,7 @@
             <input type="text" class="form-control" id="compItem" placeholder="Enter item name">
             <button class="btn btn-success" type="button" onclick="addCompetitionItem()">Add</button>
           </div>
-        </Dodiv>
+        </div>
         <div class="col-12 col-md-4">
           <label for="removeItem" class="form-label">Remove Competition Item:</label>
           <div class="input-group">
@@ -391,12 +391,26 @@
           <label for="college" class="form-label">Add New College:</label>
           <div class="input-group">
             <input type="text" class="form-control" id="college" placeholder="Enter college name">
+            <select class="form-select" id="collegeStream" style="max-width: 120px;">
+              <option value="Shareea">Shareea</option>
+              <option value="Shareea Plus">Shareea Plus</option>
+              <option value="Life">Life</option>
+              <option value="SHE">SHE</option>
+              <option value="SHE Plus">SHE Plus</option>
+            </select>
             <button class="btn btn-success" type="button" onclick="addCollege()">Add</button>
           </div>
         </div>
         <div class="col-12 col-md-4">
           <label for="removeCollege" class="form-label">Remove College:</label>
           <div class="input-group">
+            <select class="form-select" id="removeCollegeStream" onchange="updateRemoveCollegeDropdown()">
+              <option value="Shareea">Shareea</option>
+              <option value="Shareea Plus">Shareea Plus</option>
+              <option value="Life">Life</option>
+              <option value="SHE">SHE</option>
+              <option value="SHE Plus">SHE Plus</option>
+            </select>
             <select class="form-select" id="removeCollege">
               <option value="">Select college to remove</option>
             </select>
@@ -404,9 +418,8 @@
           </div>
         </div>
         <div class="col-12 col-md-4">
-          <label for="stream" class="form-label">Stream:</label>
-          <select class="form-select" id="stream">
-            <option value="">All Streams</option>
+          <label for="stream" class="form-label">Select Stream to Edit:</label>
+          <select class="form-select" id="stream" onchange="updateAdminMatrix()">
             <option value="Shareea">Shareea</option>
             <option value="Shareea Plus">Shareea Plus</option>
             <option value="Life">Life</option>
@@ -414,9 +427,9 @@
             <option value="SHE Plus">SHE Plus</option>
           </select>
         </div>
-        <div class="col-12 col-md-4" id="categoryField" style="display:none;">
+        <div class="col-12 col-md-4" id="categoryField">
           <label for="category" class="form-label">Category:</label>
-          <select class="form-select" id="category">
+          <select class="form-select" id="category" onchange="updateAdminMatrix()">
             <option value="Sanaviyya">Sanaviyya</option>
             <option value="Bakalooriyya">Bakalooriyya</option>
             <option value="PG">PG</option>
@@ -492,19 +505,38 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     const { jsPDF } = window.jspdf;
+    const validStreams = ["Shareea", "Shareea Plus", "Life", "SHE", "SHE Plus"];
     let competitionData = JSON.parse(localStorage.getItem('competitionData')) || {
-      items: [], colleges: [], points: {}, stream: "", category: ""
+      items: [], 
+      colleges: {
+        Shareea: [],
+        "Shareea Plus": [],
+        Life: [],
+        SHE: [],
+        "SHE Plus": []
+      }, 
+      points: {}, 
+      stream: "", 
+      category: ""
     };
     const correctPassword = "sn@sso25";
     const clearModal = new bootstrap.Modal(document.getElementById('clearModal'));
     const pinModal = new bootstrap.Modal(document.getElementById('pinModal'));
     const categories = ["Sanaviyya", "Bakalooriyya", "PG"];
 
+    // Ensure all streams are initialized
+    validStreams.forEach(stream => {
+      if (!competitionData.colleges[stream]) {
+        competitionData.colleges[stream] = [];
+      }
+    });
+
     $(document).ready(function() {
       $('#stream').change(function() {
         const stream = $(this).val();
         $('#categoryField').toggle(stream === "Shareea" || stream === "SHE");
         if (!stream) $('#category').val('Sanaviyya');
+        updateAdminMatrix();
       });
 
       $('#fStream').change(function() {
@@ -516,6 +548,7 @@
       updateAdminMatrix();
       updateResultsView();
       updateRemoveDropdowns();
+      updateRemoveCollegeDropdown();
     });
 
     function exportToPDF() {
@@ -587,8 +620,8 @@
       const itemName = $('#compItem').val().trim();
       const stream = $('#stream').val();
       const category = $('#category').val();
-      if (itemName) {
-        const itemKey = stream ? `${itemName} (${stream}${(stream === "Shareea" || stream === "SHE") ? ' - ' + category : ''})` : itemName;
+      if (itemName && stream && validStreams.includes(stream)) {
+        const itemKey = `${itemName} (${stream}${(stream === "Shareea" || stream === "SHE") ? ' - ' + category : ''})`;
         if (!competitionData.items.includes(itemKey)) {
           competitionData.items.push(itemKey);
           saveData();
@@ -600,6 +633,8 @@
         } else {
           showAlert('Item already exists!', 'warning');
         }
+      } else {
+        showAlert('Please enter an item name and select a valid stream.', 'warning');
       }
     }
 
@@ -615,36 +650,62 @@
         updateResultsView();
         updateRemoveDropdowns();
         showAlert('Item removed!', 'success');
+      } else {
+        showAlert('Please select an item to remove.', 'warning');
       }
     }
 
     function addCollege() {
       const collegeName = $('#college').val().trim();
-      if (collegeName && !competitionData.colleges.includes(collegeName)) {
-        competitionData.colleges.push(collegeName);
+      const stream = $('#collegeStream').val();
+      
+      if (!collegeName) {
+        showAlert('Please enter a college name.', 'warning');
+        return;
+      }
+      if (!stream || !validStreams.includes(stream)) {
+        showAlert('Please select a valid stream.', 'warning');
+        return;
+      }
+
+      // Ensure the stream's college array is initialized
+      if (!competitionData.colleges[stream]) {
+        competitionData.colleges[stream] = [];
+      }
+
+      if (!competitionData.colleges[stream].includes(collegeName)) {
+        competitionData.colleges[stream].push(collegeName);
         saveData();
         $('#college').val('');
         updateAdminMatrix();
         updateResultsView();
-        updateRemoveDropdowns();
-        showAlert('College added!', 'success');
+        updateRemoveCollegeDropdown();
+        showAlert(`College "${collegeName}" added to ${stream}!`, 'success');
       } else {
-        showAlert('College already exists!', 'warning');
+        showAlert(`College "${collegeName}" already exists in ${stream}!`, 'warning');
       }
     }
 
     function removeCollege() {
       const collegeToRemove = $('#removeCollege').val();
-      if (collegeToRemove) {
-        competitionData.colleges = competitionData.colleges.filter(college => college !== collegeToRemove);
-        Object.keys(competitionData.points).forEach(key => {
-          if (key.includes(collegeToRemove)) delete competitionData.points[key];
+      const stream = $('#removeCollegeStream').val();
+      
+      if (!collegeToRemove || !stream || !validStreams.includes(stream)) {
+        showAlert('Please select a valid stream and college to remove.', 'warning');
+        return;
+      }
+
+      if (competitionData.colleges[stream]) {
+        competitionData.colleges[stream] = competitionData.colleges[stream].filter(college => college !== collegeToRemove);
+        competitionData.items.forEach(item => {
+          const pointsKey = `${collegeToRemove}_${item}`;
+          delete competitionData.points[pointsKey];
         });
         saveData();
         updateAdminMatrix();
         updateResultsView();
-        updateRemoveDropdowns();
-        showAlert('College removed!', 'success');
+        updateRemoveCollegeDropdown();
+        showAlert(`College "${collegeToRemove}" removed from ${stream}!`, 'success');
       }
     }
 
@@ -653,36 +714,62 @@
       competitionData.items.forEach(item => {
         removeItemSelect.append(`<option value="${item}">${item}</option>`);
       });
+    }
 
+    function updateRemoveCollegeDropdown() {
+      const stream = $('#removeCollegeStream').val();
       const removeCollegeSelect = $('#removeCollege').empty().append('<option value="">Select college to remove</option>');
-      competitionData.colleges.forEach(college => {
-        removeCollegeSelect.append(`<option value="${college}">${college}</option>`);
-      });
+      
+      if (stream && validStreams.includes(stream) && competitionData.colleges[stream]) {
+        competitionData.colleges[stream].forEach(college => {
+          removeCollegeSelect.append(`<option value="${college}">${college}</option>`);
+        });
+      }
     }
 
     function updateAdminMatrix() {
+      const stream = $('#stream').val();
+      const category = $('#category').val();
+      
+      if (!stream || !validStreams.includes(stream)) {
+        $('#adminMatrix thead tr').empty().append('<th>College \\ Item</th>');
+        $('#adminMatrixBody').empty();
+        return;
+      }
+
+      const filteredItems = competitionData.items.filter(item => {
+        if (stream === "Shareea" || stream === "SHE") {
+          return item.includes(`(${stream} - ${category})`);
+        } else {
+          return item.includes(`(${stream})`);
+        }
+      });
+      
       const thead = $('#adminMatrix thead tr').empty().append('<th>College \\ Item</th>');
       const tbody = $('#adminMatrixBody').empty();
-      competitionData.items.forEach(item => {
-        thead.append(`<th>${item}</th>`);
+      
+      filteredItems.forEach(item => {
+        thead.append(`<th>${item.replace(/\(.*?\)/g, '').trim()}</th>`);
       });
 
-      competitionData.colleges.forEach(college => {
-        const row = $('<tr>').append(`<td class="college-cell">${college}</td>`);
-        competitionData.items.forEach(item => {
-          const pointsKey = `${college}_${item}`;
-          const pointsValue = competitionData.points[pointsKey] || '';
-          row.append(`
-            <td>
-              <input type="number" class="form-control points-input" 
-                     data-college="${college}" 
-                     data-item="${item}"
-                     value="${pointsValue}">
-            </td>
-          `);
+      if (competitionData.colleges[stream]) {
+        competitionData.colleges[stream].forEach(college => {
+          const row = $('<tr>').append(`<td class="college-cell">${college}</td>`);
+          filteredItems.forEach(item => {
+            const pointsKey = `${college}_${item}`;
+            const pointsValue = competitionData.points[pointsKey] || '';
+            row.append(`
+              <td>
+                <input type="number" class="form-control points-input" 
+                       data-college="${college}" 
+                       data-item="${item}"
+                       value="${pointsValue}">
+              </td>
+            `);
+          });
+          tbody.append(row);
         });
-        tbody.append(row);
-      });
+      }
     }
 
     function updateResultsView() {
@@ -698,30 +785,36 @@
         }
       } else if (filterStream) {
         createCategoryTable(container, filterStream, "");
+      } else {
+        validStreams.forEach(stream => {
+          if (stream === "Shareea" || stream === "SHE") {
+            categories.forEach(category => createCategoryTable(container, stream, category));
+          } else {
+            createCategoryTable(container, stream, "");
+          }
+        });
       }
 
-      const hasResults = competitionData.items.some(item => {
-        if (!filterStream) return true;
-        if (filterCategory && (filterStream === "Shareea" || filterStream === "SHE")) {
-          return item.includes(`(${filterStream} - ${filterCategory})`);
-        }
-        return item.includes(`(${filterStream}`);
-      });
+      const hasResults = container.children().length > 0;
       $('#noResultsAlert').toggle(!hasResults);
     }
 
     function createCategoryTable(container, stream, category) {
+      if (!validStreams.includes(stream) || !competitionData.colleges[stream]) return;
+
       const filteredItems = competitionData.items.filter(item => {
-        if (!stream) return false;
-        const hasStream = item.includes(`(${stream}`);
-        if (!hasStream) return false;
         if (stream === "Shareea" || stream === "SHE") {
-          if (category && !item.includes(category)) return false;
+          if (category) {
+            return item.includes(`(${stream} - ${category})`);
+          } else {
+            return item.includes(`(${stream}`);
+          }
+        } else {
+          return item.includes(`(${stream})`);
         }
-        return true;
       });
 
-      if (!filteredItems.length) return;
+      if (!filteredItems.length || !competitionData.colleges[stream].length) return;
 
       const section = $(`
         <div class="category-section">
@@ -745,7 +838,7 @@
       });
       thead.append('<th>Total</th>');
 
-      competitionData.colleges.forEach(college => {
+      competitionData.colleges[stream].forEach(college => {
         const row = $('<tr>').append(`<td class="college-cell">${college}</td>`);
         let collegeTotal = 0;
         filteredItems.forEach(item => {
@@ -794,11 +887,24 @@
     }
 
     $('#confirmClear').click(function() {
-      competitionData = { items: [], colleges: [], points: {}, stream: "", category: "" };
+      competitionData = { 
+        items: [], 
+        colleges: {
+          Shareea: [],
+          "Shareea Plus": [],
+          Life: [],
+          SHE: [],
+          "SHE Plus": []
+        }, 
+        points: {}, 
+        stream: "", 
+        category: "" 
+      };
       saveData();
       updateAdminMatrix();
       updateResultsView();
       updateRemoveDropdowns();
+      updateRemoveCollegeDropdown();
       clearModal.hide();
       showAlert('All data cleared.', 'success');
     });
