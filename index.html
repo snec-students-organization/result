@@ -11,11 +11,10 @@
   <style>
     body { 
       padding: 20px; 
-      background-image: url('asset/sa.jpg');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f4; /* Default background color */
+      position: relative;
+      min-height: 100vh; /* Ensure body takes full height for bottom logo */
     }
     .form-section { 
       margin-bottom: 30px; 
@@ -27,13 +26,26 @@
     #adminSection { display: none; }
     
     /* Logo Styles */
-    .logo-container {
-      text-align: center;
+    .logo-container-top {
+      display: flex;
+      justify-content: center;
       margin-bottom: 20px;
+    }
+    .logo-container-bottom {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+      margin-bottom: 60px; /* Space for admin buttons */
     }
     .logo {
       max-width: 150px;
       height: auto;
+    }
+    
+    /* Main content adjustment to avoid overlap with logos */
+    .container {
+      padding-top: 80px; /* Adjust based on top logo height */
+      padding-bottom: 100px; /* Adjust for bottom logo and buttons */
     }
     
     /* Results Matrix Styles */
@@ -106,7 +118,7 @@
       background-color: #34495e;
     }
     
-    /* Responsive Table */
+    /* Responsive Table and Logos */
     @media (max-width: 768px) {
       .results-matrix {
         display: block;
@@ -115,14 +127,21 @@
       .logo {
         max-width: 100px;
       }
+      .container {
+        padding-top: 60px;
+        padding-bottom: 80px;
+      }
+      .logo-container-bottom {
+        margin-bottom: 50px;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="logo-container-top">
+    <img src="asset/sa_pho-removebg-preview.png" alt="Competition Logo 1" class="logo">
+  </div>
   <div class="container">
-    <div class="logo-container">
-      <img src="asset/SHAREE'A (1).png" alt="Competition Logo" class="logo">
-    </div>
     <h1 class="text-center mb-4" style="color: #2c3e50;">College Competition Points System</h1>
 
     <!-- User View Section -->
@@ -243,6 +262,9 @@
         <button type="button" class="btn btn-primary" onclick="savePoints()">Save All Points</button>
       </div>
     </section>
+  </div>
+  <div class="logo-container-bottom">
+    <img src="asset/SHAREE'A (1).png" alt="Competition Logo 2" class="logo">
   </div>
 
   <!-- Admin and Export Buttons -->
