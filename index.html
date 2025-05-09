@@ -18,7 +18,7 @@
       min-height: 100vh;
       position: relative;
       overflow-x: hidden;
-      padding-top: 70px; /* Adjust for fixed navbar */
+      padding-top: 70px;
     }
     .navbar {
       background: #1e3a8a;
@@ -54,7 +54,6 @@
     }
     #adminSection { display: none; }
 
-    /* Logo Styles */
     .logo-container {
       display: flex;
       justify-content: space-between;
@@ -81,7 +80,6 @@
       transform: scale(1.05) !important;
     }
 
-    /* Main content */
     .container {
       padding-top: 20px;
       padding-bottom: 120px;
@@ -95,7 +93,6 @@
       text-align: center;
     }
 
-    /* Results Matrix */
     .results-matrix {
       width: 100%;
       border-collapse: collapse;
@@ -134,7 +131,6 @@
       min-width: 100px;
     }
 
-    /* Category Section */
     .category-section {
       margin-bottom: 20px;
       padding: 15px;
@@ -156,7 +152,6 @@
       font-size: 1.2rem;
     }
 
-    /* Points Input */
     .points-input {
       width: 60px;
       text-align: center;
@@ -169,7 +164,6 @@
       box-shadow: 0 0 4px rgba(59, 130, 246, 0.4);
     }
 
-    /* Buttons */
     .btn-primary, .btn-admin, .btn-export, .btn-success, .btn-danger, .btn-secondary {
       border-radius: 6px;
       padding: 8px 15px;
@@ -195,7 +189,6 @@
       box-shadow: 0 3px 8px rgba(0,0,0,0.15);
     }
 
-    /* Modal */
     .modal-content {
       border-radius: 10px;
       border: none;
@@ -214,7 +207,6 @@
       font-size: 0.9rem;
     }
 
-    /* Animations */
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -250,7 +242,6 @@
       }
     }
 
-    /* Mobile Responsive */
     @media (max-width: 576px) {
       body {
         padding: 8px;
@@ -524,7 +515,7 @@
     const pinModal = new bootstrap.Modal(document.getElementById('pinModal'));
     const categories = ["Sanaviyya", "Bakalooriyya", "PG"];
 
-    // Ensure all streams are initialized
+    // Initialize all streams if they don't exist
     validStreams.forEach(stream => {
       if (!competitionData.colleges[stream]) {
         competitionData.colleges[stream] = [];
@@ -532,6 +523,7 @@
     });
 
     $(document).ready(function() {
+      // Initialize UI elements
       $('#stream').change(function() {
         const stream = $(this).val();
         $('#categoryField').toggle(stream === "Shareea" || stream === "SHE");
@@ -545,10 +537,35 @@
         if (!stream) $('#fCategory').val('');
       });
 
+      // Initialize data displays
       updateAdminMatrix();
       updateResultsView();
       updateRemoveDropdowns();
       updateRemoveCollegeDropdown();
+
+      // Set up clear confirmation
+      $('#confirmClear').click(function() {
+        competitionData = { 
+          items: [], 
+          colleges: {
+            Shareea: [],
+            "Shareea Plus": [],
+            Life: [],
+            SHE: [],
+            "SHE Plus": []
+          }, 
+          points: {}, 
+          stream: "", 
+          category: "" 
+        };
+        saveData();
+        updateAdminMatrix();
+        updateResultsView();
+        updateRemoveDropdowns();
+        updateRemoveCollegeDropdown();
+        clearModal.hide();
+        showAlert('All data cleared.', 'success');
+      });
     });
 
     function exportToPDF() {
@@ -620,21 +637,28 @@
       const itemName = $('#compItem').val().trim();
       const stream = $('#stream').val();
       const category = $('#category').val();
-      if (itemName && stream && validStreams.includes(stream)) {
-        const itemKey = `${itemName} (${stream}${(stream === "Shareea" || stream === "SHE") ? ' - ' + category : ''})`;
-        if (!competitionData.items.includes(itemKey)) {
-          competitionData.items.push(itemKey);
-          saveData();
-          $('#compItem').val('');
-          updateAdminMatrix();
-          updateResultsView();
-          updateRemoveDropdowns();
-          showAlert('Item added!', 'success');
-        } else {
-          showAlert('Item already exists!', 'warning');
-        }
+      
+      if (!itemName) {
+        showAlert('Please enter an item name.', 'warning');
+        return;
+      }
+      if (!stream || !validStreams.includes(stream)) {
+        showAlert('Please select a valid stream.', 'warning');
+        return;
+      }
+
+      const itemKey = `${itemName} (${stream}${(stream === "Shareea" || stream === "SHE") ? ' - ' + category : ''})`;
+      
+      if (!competitionData.items.includes(itemKey)) {
+        competitionData.items.push(itemKey);
+        saveData();
+        $('#compItem').val('');
+        updateAdminMatrix();
+        updateResultsView();
+        updateRemoveDropdowns();
+        showAlert('Item added!', 'success');
       } else {
-        showAlert('Please enter an item name and select a valid stream.', 'warning');
+        showAlert('Item already exists!', 'warning');
       }
     }
 
@@ -642,6 +666,7 @@
       const itemToRemove = $('#removeItem').val();
       if (itemToRemove) {
         competitionData.items = competitionData.items.filter(item => item !== itemToRemove);
+        // Remove all points associated with this item
         Object.keys(competitionData.points).forEach(key => {
           if (key.includes(itemToRemove)) delete competitionData.points[key];
         });
@@ -668,11 +693,6 @@
         return;
       }
 
-      // Ensure the stream's college array is initialized
-      if (!competitionData.colleges[stream]) {
-        competitionData.colleges[stream] = [];
-      }
-
       if (!competitionData.colleges[stream].includes(collegeName)) {
         competitionData.colleges[stream].push(collegeName);
         saveData();
@@ -697,6 +717,7 @@
 
       if (competitionData.colleges[stream]) {
         competitionData.colleges[stream] = competitionData.colleges[stream].filter(college => college !== collegeToRemove);
+        // Remove all points associated with this college
         competitionData.items.forEach(item => {
           const pointsKey = `${collegeToRemove}_${item}`;
           delete competitionData.points[pointsKey];
@@ -885,29 +906,6 @@
     function clearAllData() {
       clearModal.show();
     }
-
-    $('#confirmClear').click(function() {
-      competitionData = { 
-        items: [], 
-        colleges: {
-          Shareea: [],
-          "Shareea Plus": [],
-          Life: [],
-          SHE: [],
-          "SHE Plus": []
-        }, 
-        points: {}, 
-        stream: "", 
-        category: "" 
-      };
-      saveData();
-      updateAdminMatrix();
-      updateResultsView();
-      updateRemoveDropdowns();
-      updateRemoveCollegeDropdown();
-      clearModal.hide();
-      showAlert('All data cleared.', 'success');
-    });
 
     function saveData() {
       localStorage.setItem('competitionData', JSON.stringify(competitionData));
